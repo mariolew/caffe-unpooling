@@ -233,12 +233,12 @@ layer {
   name: "relu5t"
   type: "ReLU"
   bottom: "unpool5"
-  top: "unpool5"
+  top: "relu5t"
 }
 layer {
   name: "conv5t"
   type: "Deconvolution"
-  bottom: "unpool5"
+  bottom: "relu5t"
   top: "conv5t"
   convolution_param {
     num_output: 384
@@ -251,12 +251,12 @@ layer {
   name: "relu4t"
   type: "ReLU"
   bottom: "conv5t"
-  top: "conv5t"
+  top: "relu4t"
 }
 layer {
   name: "conv4t"
   type: "Deconvolution"
-  bottom: "conv5t"
+  bottom: "relu4t"
   top: "conv4t"
   convolution_param {
     num_output: 384
@@ -269,12 +269,12 @@ layer {
   name: "relu3t"
   type: "ReLU"
   bottom: "conv4t"
-  top: "conv4t"
+  top: "relu3t"
 }
 layer {
   name: "conv3t"
   type: "Deconvolution"
-  bottom: "conv4t"
+  bottom: "relu3t"
   top: "conv3t"
   convolution_param {
     num_output: 256
@@ -298,12 +298,12 @@ layer {
   name: "relu2t"
   type: "ReLU"
   bottom: "unpool2"
-  top: "unpool2"
+  top: "relu2t"
 }
 layer {
   name: "conv2t"
   type: "Deconvolution"
-  bottom: "unpool2"
+  bottom: "relu2t"
   top: "conv2t"
   convolution_param {
     num_output: 96
@@ -328,12 +328,12 @@ layer {
   name: "relu1t"
   type: "ReLU"
   bottom: "unpool1"
-  top: "unpool1"
+  top: "relu1t"
 }
 layer {
   name: "conv1t"
   type: "Deconvolution"
-  bottom: "unpool1"
+  bottom: "relu1t"
   top: "conv1t"
   param {
     lr_mult: 1

@@ -1,7 +1,7 @@
 # caffe-unpooling
 Caffe with unpooling layers and example usage.
 
-## Example useage
+## Example usage
 
 First, you need to prepare a deploy file. Please refer to examples/deconv_deploy.prototxt for detail.
 

@@ -249,6 +249,175 @@ namespace caffe {
                 EXPECT_EQ(blob_top_->cpu_data()[i + 35] ,  0);
             }
         }       
+
+        // Test for 2x2 square unpooling layer with padding
+        void TestForwardSquareWithPad() {
+            LayerParameter layer_param;
+            PoolingParameter* pooling_param = layer_param.mutable_pooling_param();
+            pooling_param->set_kernel_size(3);
+            pooling_param->set_stride(2);
+            pooling_param->set_pad(1);
+            pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
+            const int num = 2;
+            const int channels = 2;
+            blob_bottom_->Reshape(num, channels, 2, 4);
+            blob_bottom_mask_->Reshape(num, channels, 2, 4);
+            // Input: 2x2 channels of:
+            //     [9 5 5 8]
+            //     [9 5 5 8]
+            // mask: 2x2 channels of:
+            //     [1 2 2 5]
+            //     [1 9 9 5]
+            for (int i = 0; i < 8 * num * channels; i += 8) {
+                // Initialize the bottom
+                blob_bottom_->mutable_cpu_data()[i + 0] = 9;
+                blob_bottom_->mutable_cpu_data()[i + 1] = 5;
+                blob_bottom_->mutable_cpu_data()[i + 2] = 5;
+                blob_bottom_->mutable_cpu_data()[i + 3] = 8;
+                blob_bottom_->mutable_cpu_data()[i + 4] = 9;
+                blob_bottom_->mutable_cpu_data()[i + 5] = 5;
+                blob_bottom_->mutable_cpu_data()[i + 6] = 5;
+                blob_bottom_->mutable_cpu_data()[i + 7] = 8;
+                // And the mask
+                blob_bottom_mask_->mutable_cpu_data()[i + 0] = 1;
+                blob_bottom_mask_->mutable_cpu_data()[i + 1] = 3;
+                blob_bottom_mask_->mutable_cpu_data()[i + 2] = 3;
+                blob_bottom_mask_->mutable_cpu_data()[i + 3] = 5;
+                blob_bottom_mask_->mutable_cpu_data()[i + 4] = 1;
+                blob_bottom_mask_->mutable_cpu_data()[i + 5] = 9;
+                blob_bottom_mask_->mutable_cpu_data()[i + 6] = 9;
+                blob_bottom_mask_->mutable_cpu_data()[i + 7] = 5;
+            }
+
+            UnpoolingLayer<Dtype> layer(layer_param);
+            layer.SetUp(blob_bottom_vec_, blob_top_vec_);
+            EXPECT_EQ(blob_top_->num(), num);
+            EXPECT_EQ(blob_top_->channels(), channels);
+            EXPECT_EQ(blob_top_->height(), 2);
+            EXPECT_EQ(blob_top_->width(), 6);
+
+            // Forward Test
+            layer.Forward(blob_bottom_vec_, blob_top_vec_);
+            // Expect output: 2x2 channels of
+            //      [0 9 0 5 0 8]
+            //      [0 0 0 5 0 0]
+            for (int i = 0; i < 12 * num * channels; i += 12) {
+                EXPECT_EQ(blob_top_->cpu_data()[i +  0], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  1], 9);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  2], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  3], 5);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  4], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  5], 8);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  6], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  7], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  8], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  9], 5);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 10], 0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 11], 0);
+            }
+        }
+
+        // Test for 3x2 rectangular unpooling layer with kernel_h > kernel_w and padding
+        void TestForwardRectHighWithPad() {
+            LayerParameter layer_param;
+            PoolingParameter* pooling_param = layer_param.mutable_pooling_param();
+            pooling_param->set_kernel_h(3);
+            pooling_param->set_kernel_w(2);
+            pooling_param->set_stride(2);
+            pooling_param->set_pad(1);
+            pooling_param->set_pool(PoolingParameter_PoolMethod_MAX);
+            const int num = 2;
+            const int channels = 2;
+            blob_bottom_->Reshape(num, channels, 3, 4);
+            blob_bottom_mask_->Reshape(num, channels, 3, 4);
+            // Input: 2x 2 channels of:
+            // [35    32    26    27]
+            // [35    32    33    27]
+            // [31    34    34    27]
+            //
+            // mask: 2x2 channels of:
+            // [ 6    8     3     11]
+            // [ 6    8    15     11]
+            // [18   26    28     29]
+
+            for (int i = 0; i < 12 * num * channels; i += 12) {
+                blob_bottom_->mutable_cpu_data()[i +  0] = 35;
+                blob_bottom_->mutable_cpu_data()[i +  1] = 32;
+                blob_bottom_->mutable_cpu_data()[i +  2] = 26;
+                blob_bottom_->mutable_cpu_data()[i +  3] = 27;
+                blob_bottom_->mutable_cpu_data()[i +  4] = 35;
+                blob_bottom_->mutable_cpu_data()[i +  5] = 32;
+                blob_bottom_->mutable_cpu_data()[i +  6] = 33;
+                blob_bottom_->mutable_cpu_data()[i +  7] = 27;
+                blob_bottom_->mutable_cpu_data()[i +  8] = 31;
+                blob_bottom_->mutable_cpu_data()[i +  9] = 34;
+                blob_bottom_->mutable_cpu_data()[i + 10] = 34;
+                blob_bottom_->mutable_cpu_data()[i + 11] = 27;
+
+                // For the mask
+
+                blob_bottom_mask_->mutable_cpu_data()[i +  0] =  6;
+                blob_bottom_mask_->mutable_cpu_data()[i +  1] =  8;
+                blob_bottom_mask_->mutable_cpu_data()[i +  2] =  3;
+                blob_bottom_mask_->mutable_cpu_data()[i +  3] = 11;
+                blob_bottom_mask_->mutable_cpu_data()[i +  4] =  6;
+                blob_bottom_mask_->mutable_cpu_data()[i +  5] =  8;
+                blob_bottom_mask_->mutable_cpu_data()[i +  6] = 15;
+                blob_bottom_mask_->mutable_cpu_data()[i +  7] = 11;
+                blob_bottom_mask_->mutable_cpu_data()[i +  8] = 18;
+                blob_bottom_mask_->mutable_cpu_data()[i +  9] = 26;
+                blob_bottom_mask_->mutable_cpu_data()[i + 10] = 28;
+                blob_bottom_mask_->mutable_cpu_data()[i + 11] = 29;
+            }  
+
+            UnpoolingLayer<Dtype> layer(layer_param);
+            layer.SetUp(blob_bottom_vec_, blob_top_vec_);
+            EXPECT_EQ(blob_top_->num(), num);
+            EXPECT_EQ(blob_top_->channels(), channels);
+            EXPECT_EQ(blob_top_->height(), 5);
+            EXPECT_EQ(blob_top_->width(), 6);
+
+            layer.Forward(blob_bottom_vec_, blob_top_vec_);
+            // Expected output: 2x 2 channels of:
+                // [ 0     0     0    26    0    0]
+                // [35     0    32    0     0   27]
+                // [ 0     0     0   33     0    0]
+                // [31     0     0    0     0    0]
+                // [ 0     0    34    0    34   27]
+
+            for (int i = 0; i < 30 * num * channels; i += 30) {
+                EXPECT_EQ(blob_top_->cpu_data()[i +  0] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  1] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  2] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  3] , 26);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  4] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  5] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  6] , 35);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  7] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  8] , 32);
+                EXPECT_EQ(blob_top_->cpu_data()[i +  9] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 10] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 11] , 27);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 12] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 13] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 14] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 15] , 33);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 16] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 17] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 18] , 31);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 19] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 20] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 21] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 22] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 23] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 24] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 25] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 26] , 34);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 27] ,  0);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 28] , 34);
+                EXPECT_EQ(blob_top_->cpu_data()[i + 29] , 27);
+            }
+        }       
     };
 
     TYPED_TEST_CASE(UnpoolingLayerTest, TestDtypes);
